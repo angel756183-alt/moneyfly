@@ -28,6 +28,20 @@
     }
   </style>
 </head>
+<script>
+    // 註冊 PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => console.log('Service Worker 註冊成功', reg))
+          .catch((err) => console.log('Service Worker 註冊失敗', err));
+      });
+    }
+
+    // 原本的程式碼...
+    const currencies = { ... (略)
+  </script>
+</body>
 <body class="bg-gradient-to-br from-red-50 to-green-50 min-h-screen p-4">
   <div class="max-w-md mx-auto">
     <div class="bg-white rounded-2xl shadow-xl p-6 mb-4">
