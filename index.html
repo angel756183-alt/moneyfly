@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="錢錢飛走了">
+  <meta name="theme-color" content="#dc2626">
+  <title>錢錢飛走了</title>
+  
+  <!-- PWA Icons -->
+  <link rel="icon" type="image/png" href="money-bouquet.png">
+  <link rel="apple-touch-icon" href="money-bouquet.png">
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-red-50 to-green-50 min-h-screen p-4">
+  <div class="max-w-md mx-auto">
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-4">
+      <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+        🎄 錢錢飛走了 🎅
+      </h1>
+
+      <!-- 原價輸入 -->
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-gray-700 mb-2">商品原價</label>
+        <div class="relative">
+          <span class="absolute left-3 top-3 text-gray-400">$</span>
+          <input type="number" id="originalPrice" placeholder="輸入原價"
+            class="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:outline-none text-lg">
+        </div>
+        <select id="currency" class="mt-2 w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:outline-none">
+          <option value="TWD">NT$ 台幣</option>
+          <option value="USD">$ 美元</option>
+          <option value="EUR">€ 歐元</option>
+          <option value="JPY">¥ 日圓</option>
+          <option value="CNY">¥ 人民幣</option>
+          <option value="HKD">HK$ 港幣</option>
+          <option value="GBP">£ 英鎊</option>
+          <option value="NZD">NZ$ 紐西蘭幣</option>
+          <option value="EGP">E£ 埃及鎊</option>
+          <option value="SEK">kr 瑞典克朗</option>
+          <option value="NOK">kr 挪威克朗</option>
+          <option value="DKK">kr 丹麥克朗</option>
+          <option value="AUD">A$ 澳幣</option>
+          <option value="VND">₫ 越南盾</option>
+          <option value="THB">฿ 泰銖</option>
+        </select>
+      </div>
+
+      <!-- 折扣輸入 -->
+      <div class="mb-6">
+        <div class="flex justify-between items-center mb-2">
+          <label class="block text-sm font-medium text-gray-700">套用折扣</label>
+          <button onclick="addDiscount()" class="flex items-center gap-1 text-red-600 text-sm font-medium hover:text-red-700">
+            <span>+</span> 新增折扣
+          </button>
+        </div>
+        <div id="discountList"></div>
+      </div>
+
+      <!-- 滿額贈輸入 -->
+      <div class="mb-6 border-t-2 border-gray-100 pt-6">
+        <div class="flex justify-between items-center mb-2">
+          <label class="block text-sm font-medium text-gray-700 flex items-center gap-2">
+            🎁 滿額贈
+          </label>
+          <button onclick="addGiftThreshold()" class="flex items-center gap-1 text-green-600 text-sm font-medium hover:text-green-700">
+            <span>+</span> 新增門檻
+          </button>
+        </div>
+        <div id="giftList"></div>
+        <p class="text-xs text-gray-500 mt-2">例如：滿 3000 送 300</p>
+      </div>
+
+      <!-- 計算結果 -->
+      <div id="result"></div>
+
+      <!-- 匯率轉換 -->
+      <div id="exchangeSection" class="border-t-2 border-gray-100 pt-4 hidden">
+        <label class="block text-sm font-medium text-gray-700 mb-2">匯率轉換</label>
+        <select id="targetCurrency" class="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:outline-none mb-3">
+        </select>
+        <div id="exchangeResult"></div>
+      </div>
+    </div>
+
+    <div class="text-center text-sm text-gray-600">
+      <p>提示：折扣數字代表打幾折</p>
+      <p>例如：80 = 打8折（原價的80%）</p>
+    </div>
+  </div>
+
+  <script>
+    const currencies = {
+      'TWD': { name: '台幣', symbol: 'NT$' },
+      'USD': { name: '美元', symbol: '$' },
+      'EUR': { name: '歐元', symbol: '€' },
+      'JPY': { name: '日圓', symbol: '¥' },
+      'CNY': { name: '人民幣', symbol: '¥' },
+      'HKD': { name: '港幣', symbol: 'HK$' },
+      'GBP': { name: '英鎊', symbol: '£' },
+      'NZD': { name: '紐西蘭幣', symbol: 'NZ$' },
+      'EGP': { name: '埃及鎊', symbol: 'E£' },
+      'SEK': { name: '瑞典克朗', symbol: 'kr' },
+      'NOK': { name: '挪威克朗', symbol: 'kr' },
+      'DKK': { name: '丹麥克朗', symbol: 'kr' },
+      'AUD': { name: '澳幣', symbol: 'A$' },
+      'VND': { name: '越南盾', symbol: '₫' },
+      'THB': { name: '泰銖', symbol: '฿' }
+    };
+
+    let discounts = [{ id: 1, value: '' }];
+    let giftThresholds = [{ id: 1, spend: '', gift: '' }];
+    let exchangeRate = null;
+
+    function addDiscount() {
+      discounts.push({ id: Date.now(), value: '' });
+      renderDiscounts();
+    }
+
+    function removeDiscount(id) {
+      if (discounts.length > 1) {
+        discounts = discounts.filter(d => d.id !== id);
+        renderDiscounts();
+        calculate();
+      }
+    }
+
+    function addGiftThreshold() {
+      giftThresholds.push({ id: Date.now(), spend: '', gift: '' });
+      renderGifts();
+    }
+
+    function removeGiftThreshold(id) {
+      if (giftThresholds.length > 1) {
+        giftThresholds = giftThresholds.filter(g => g.id !== id);
+        renderGifts();
+        calculate();
+      }
+    }
+
+    function renderDiscounts() {
+      const list = document.getElementById('discountList');
+      list.innerHTML = discounts.map((d, index) => `
+        <div class="flex items-center gap-2 mb-3">
+          <div class="flex-1 relative">
+            <input type="number" value="${d.value}" 
+              onchange="discounts[${index}].value = this.value; calculate();"
+              placeholder="第 ${index + 1} 次折扣 (例如: 80 代表打8折)"
+              class="w-full pl-4 pr-10 py-3 border-2 border-gray-200 rounded-lg focus:border-red-500 focus:outline-none"
+              min="0" max="100">
+            <span class="absolute right-3 top-3 text-gray-400">%</span>
+          </div>
+          ${discounts.length > 1 ? `
+            <button onclick="removeDiscount(${d.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg">✕</button>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderGifts() {
+      const list = document.getElementById('giftList');
+      list.innerHTML = giftThresholds.map((g, index) => `
+        <div class="mb-3">
+          <div class="flex items-center gap-2">
+            <input type="number" value="${g.spend}"
+              onchange="giftThresholds[${index}].spend = this.value; calculate();"
+              placeholder="滿額金額"
+              class="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-sm">
+            <span class="text-gray-500 text-sm">送</span>
+            <input type="number" value="${g.gift}"
+              onchange="giftThresholds[${index}].gift = this.value; calculate();"
+              placeholder="贈送金額"
+              class="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-sm">
+            ${giftThresholds.length > 1 ? `
+              <button onclick="removeGiftThreshold(${g.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg">✕</button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function calculate() {
+      const originalPrice = parseFloat(document.getElementById('originalPrice').value) || 0;
+      if (!originalPrice) {
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('exchangeSection').classList.add('hidden');
+        return;
+      }
+
+      const currency = document.getElementById('currency').value;
+      const symbol = currencies[currency].symbol;
+
+      // 計算折扣
+      let steps = [{ label: '原價', price: originalPrice, discount: null }];
+      let currentPrice = originalPrice;
+
+      discounts.forEach((d, index) => {
+        const discountValue = parseFloat(d.value);
+        if (discountValue && discountValue > 0 && discountValue <= 100) {
+          currentPrice = currentPrice * (discountValue / 100);
+          steps.push({
+            label: `第 ${index + 1} 次折扣`,
+            price: currentPrice,
+            discount: discountValue
+          });
+        }
+      });
+
+      // 計算滿額贈
+      const validThresholds = giftThresholds
+        .filter(g => parseFloat(g.spend) > 0 && parseFloat(g.gift) > 0 && currentPrice >= parseFloat(g.spend))
+        .sort((a, b) => parseFloat(b.spend) - parseFloat(a.spend));
+
+      const bestThreshold = validThresholds[0];
+      const giftAmount = bestThreshold ? parseFloat(bestThreshold.gift) : 0;
+      const finalPrice = currentPrice - giftAmount;
+      const totalDiscount = ((1 - finalPrice / originalPrice) * 100).toFixed(1);
+
+      // 顯示計算過程
+      let stepsHtml = steps.length > 1 ? `
+        <div class="bg-gradient-to-r from-red-50 to-green-50 rounded-xl p-4 mb-4">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">計算過程</h3>
+          ${steps.map(s => `
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm text-gray-600">${s.label}${s.discount ? ` (${s.discount}折)` : ''}</span>
+              <span class="font-semibold text-gray-800">${symbol} ${s.price.toFixed(2)}</span>
+            </div>
+          `).join('')}
+          ${giftAmount > 0 ? `
+            <div class="flex justify-between items-center mb-2 text-green-600">
+              <span class="text-sm flex items-center gap-1">🎁 滿額贈折抵</span>
+              <span class="font-semibold">- ${symbol} ${giftAmount.toFixed(2)}</span>
+            </div>
+          ` : ''}
+        </div>
+      ` : '';
+
+      // 顯示最終結果
+      document.getElementById('result').innerHTML = `
+        ${stepsHtml}
+        <div class="bg-gradient-to-r from-red-600 to-green-600 rounded-xl p-5 text-white mb-4">
+          <div class="text-sm opacity-90 mb-1">實付金額</div>
+          <div class="text-3xl font-bold mb-2">${symbol} ${finalPrice.toFixed(2)}</div>
+          <div class="text-sm opacity-90">
+            共省下 ${totalDiscount}% (${symbol} ${(originalPrice - finalPrice).toFixed(2)})
+          </div>
+          ${bestThreshold ? `
+            <div class="mt-2 pt-2 border-t border-white border-opacity-30 text-sm">
+              ✨ 已套用：滿 ${bestThreshold.spend} 送 ${bestThreshold.gift}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      // 顯示匯率轉換區
+      document.getElementById('exchangeSection').classList.remove('hidden');
+      updateTargetCurrencies(currency);
+      fetchExchangeRate(finalPrice);
+    }
+
+    function updateTargetCurrencies(currentCurrency) {
+      const select = document.getElementById('targetCurrency');
+      select.innerHTML = Object.keys(currencies)
+        .filter(code => code !== currentCurrency)
+        .map(code => `<option value="${code}">${currencies[code].symbol} ${currencies[code].name}</option>`)
+        .join('');
+    }
+
+    async function fetchExchangeRate(finalPrice) {
+      const currency = document.getElementById('currency').value;
+      const targetCurrency = document.getElementById('targetCurrency').value;
+      
+      if (currency === targetCurrency) return;
+
+      document.getElementById('exchangeResult').innerHTML = '<div class="text-center text-gray-500 py-2">載入匯率中...</div>';
+
+      try {
+        const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${currency}`);
+        const data = await response.json();
+        exchangeRate = data.rates[targetCurrency];
+        
+        const convertedPrice = finalPrice * exchangeRate;
+        const targetSymbol = currencies[targetCurrency].symbol;
+
+        document.getElementById('exchangeResult').innerHTML = `
+          <div class="bg-red-50 rounded-lg p-4">
+            <div class="text-sm text-gray-600 mb-1">
+              匯率: 1 ${currency} = ${exchangeRate.toFixed(4)} ${targetCurrency}
+            </div>
+            <div class="text-2xl font-bold text-red-600">
+              ${targetSymbol} ${convertedPrice.toFixed(2)}
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        document.getElementById('exchangeResult').innerHTML = '<div class="text-center text-red-500 py-2">載入匯率失敗</div>';
+      }
+    }
+
+    // 初始化
+    renderDiscounts();
+    renderGifts();
+    
+    // 監聽輸入變化
+    document.getElementById('originalPrice').addEventListener('input', calculate);
+    document.getElementById('currency').addEventListener('change', calculate);
+    document.getElementById('targetCurrency').addEventListener('change', () => {
+      const finalPrice = parseFloat(document.getElementById('originalPrice').value) || 0;
+      if (finalPrice) fetchExchangeRate(finalPrice);
+    });
+  </script>
+</body>
+</html>
