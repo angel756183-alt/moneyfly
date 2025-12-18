@@ -186,28 +186,37 @@
         </div>
       `).join('');
     }
-
-    function renderGifts() {
+function renderGifts() {
       const list = document.getElementById('giftList');
       list.innerHTML = giftThresholds.map((g, index) => `
-        <div class="mb-3">
-          <div class="flex items-center gap-2">
+        <div class="mb-3 p-3 bg-gray-50 rounded-xl border border-gray-100 relative">
+          ${giftThresholds.length > 1 ? `
+            <button onclick="removeGiftThreshold(${g.id})" 
+              class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 bg-white rounded-full border border-gray-200 shadow-sm">
+              ✕
+            </button>
+          ` : ''}
+
+          <div class="flex items-center gap-2 mb-2">
+            <span class="text-gray-500 text-sm font-medium w-8">滿</span>
             <input type="number" value="${g.spend}"
               onchange="giftThresholds[${index}].spend = this.value; calculate();"
-              placeholder="滿額金額"
-              class="flex-1 px-2 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-sm">
-            <span class="text-gray-500 text-sm">送</span>
+              placeholder="輸入門檻金額"
+              class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-sm bg-white">
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-gray-500 text-sm font-medium w-8">送</span>
             <input type="number" value="${g.gift}"
               onchange="giftThresholds[${index}].gift = this.value; calculate();"
-              placeholder="贈送金額"
-              class="flex-1 px-2 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-sm">
-            ${giftThresholds.length > 1 ? `
-              <button onclick="removeGiftThreshold(${g.id})" class="p-2 text-red-500 hover:bg-red-50 rounded-lg">✕</button>
-            ` : ''}
+              placeholder="輸入贈送金額"
+              class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:border-green-500 focus:outline-none text-sm bg-white">
           </div>
         </div>
       `).join('');
-    }
+}
+    
+    
 
     function calculate() {
       const originalPrice = parseFloat(document.getElementById('originalPrice').value) || 0;
@@ -341,5 +350,6 @@
   </script>
 </body>
 </html>
+
 
 
